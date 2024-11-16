@@ -1,0 +1,36 @@
+<mat-tab-group mat-align-tabs="center">
+  <mat-tab style="background-color: red;">
+    <ng-template mat-tab-label>
+      <mat-icon class="example-tab-icon">cloud_upload</mat-icon>
+      &nbsp;&nbsp; Upload
+    </ng-template>
+    <!-- <input type="text"/> -->
+    <div class="container">
+      <div class="card">
+        <h3>Upload Files</h3>
+        <div class="drop_box">
+          <header>
+            <h4>{{FileName}}</h4>
+          </header>
+          <p>Files Supported: PDF, TEXT, DOC , DOCX</p>
+          <input type="file" hidden accept=".doc,.docx,.pdf" id="fileID" style="display:none;" (change)="ProcessFile($event)">
+            <button class="btn" (click)="PopUpFileUpload()">Choose File</button> &nbsp;
+        </div>
+    
+      </div>
+    </div>
+    
+  </mat-tab>
+
+  <mat-tab>
+    <ng-template mat-tab-label>
+      <mat-icon class="example-tab-icon">folder_open</mat-icon>
+      &nbsp;&nbsp; View Uploads
+    </ng-template>
+    <mat-grid-list cols="4" rowHeight="4:4">
+      <mat-grid-tile *ngFor="let file in docLinks">
+        <img src="{{file}}" alt="">
+      </mat-grid-tile>
+    </mat-grid-list>
+  </mat-tab>
+</mat-tab-group>

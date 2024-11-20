@@ -1,7 +1,7 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { BlobServiceClient, ContainerClient } from '@azure/storage-blob';
 import { ApiService } from './service/api.service';
-import { BlobTokenRequestModel } from './models/BlobTokenRequestModel.model';
+import { BlobTokenRequestModel, TokenTypes } from './models/BlobTokenRequestModel.model';
 import { BlobFileUploadModel } from './models/BlobFileUploadModel.model';
 
 @Component({
@@ -28,12 +28,31 @@ export class AppComponent {
 
   TokenStr = "AzureToken";
   title="BlobFileupload";
-  containerName = "images";
-  accountName = "angularfilestorageazure";
+  containerName = "pentechs";
+  accountName = "pendevfilestorage";
 
   public ProcessFile(event : any) {
     const files = event.target.files[0];
-    console.log(files)
+    console.log(files);
+    const UploadFileName = `${this.generateGUID()}.${files.name.toString().split('.')[1]}`;
+    let PostObj = new BlobTokenRequestModel();
+    PostObj.TokenType = TokenTypes.UploadOrCreate;
+    PostObj.FileName = null;
+    this.apiService.post('api/Token/Generate', PostObj).subscribe(
+      (response : any) => {
+          this.uploadFile(files, UploadFileName, response.Token, () => {
+            console.log("Files are UPloaded");
+
+          });
+      },
+      (error : any) => {
+        console.error(error);
+      }
+    )
+    // this.uploadFile(files, UploadFileName, () => {
+    //   console.log("Files are UPloaded")
+    // })
+    // uploadFile(files)
   }
 
   public DeleteImage (name : string, handler: () => void){
@@ -44,22 +63,23 @@ export class AppComponent {
 
   public uploadFile(File : Blob, name : string, Token: string,  handler:() => void) {
     const blob_address = this.ContainerClass(Token).getBlockBlobClient(name);
-    console.log(blob_address);
     blob_address.uploadData(File, {blobHTTPHeaders:{blobContentType:File.type}}).then((response) => {
       console.log(response);
       handler();
     })
   }
 
-  public async getAllFilesList() {
-    const FilesList = this.ContainerClass(this.TokenStr).listBlobsFlat();
+  public async getAllFilesList(TokenStr : string) {
+    const FilesList = this.ContainerClass(TokenStr).listBlobsFlat();
     for await (const file of FilesList) {
-      this.docLinks.push(`.net/images/${file.name}?${this.TokenStr}`);
+      console.log(`https://${this.accountName}.blob.core.windows.net/${this.containerName}/${file.name}${TokenStr}`);
+      this.docLinks.push(`https://${this.accountName}.blob.core.windows.net/${this.containerName}/${file.name}${TokenStr}`);
     }
   }
 
   private ContainerClass(TokenString : string) : ContainerClient {
-    return new BlobServiceClient(`https://${this.accountName}.blob.core.windows.net?${this.TokenStr}`).getContainerClient(this.containerName);
+    console.log(`https://${this.accountName}.blob.core.windows.net?${TokenString}`);
+    return new BlobServiceClient(`https://${this.accountName}.blob.core.windows.net${TokenString}`).getContainerClient(this.containerName);
   }
 
   PopUpFileUpload() {
@@ -73,6 +93,19 @@ export class AppComponent {
     });
   }
 
+  public LoadImages() {
+    let PostObj = new BlobTokenRequestModel();
+    PostObj.TokenType = TokenTypes.List;
+    PostObj.FileName = null;
+    this.apiService.post('api/Token/Generate', PostObj).subscribe(
+      (response : any) => {
+        this.getAllFilesList(response.Token);
+      },
+      (error : any) => {
+        console.error(error);
+      }
+    )
+  }
   private SaveRecord() {
     
   }

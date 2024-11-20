@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class ApiService {
-  private apiUrl = 'http://localhost:5156';
+  private apiUrl = 'http://dev.pentechs.com/Ekah/api/DMS';
 
   constructor(private http: HttpClient) { }
 

@@ -23,6 +23,8 @@
     "@azure/storage-blob": "^12.25.0",
     "@azure/storage-file": "^10.3.0",
     "@azure/storage-queue": "^12.24.0",
+    "@types/file-saver": "^2.0.7",
+    "file-saver": "^2.0.5",
     "rxjs": "~7.5.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.11.4"

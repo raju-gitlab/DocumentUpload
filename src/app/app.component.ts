@@ -3,7 +3,8 @@ import { BlobServiceClient, ContainerClient } from '@azure/storage-blob';
 import { ApiService } from './service/api.service';
 import { BlobTokenRequestModel, TokenTypes } from './models/BlobTokenRequestModel.model';
 import { BlobFileUploadModel } from './models/BlobFileUploadModel.model';
-
+import {saveAs}  from 'file-saver';
+import { HttpClient } from '@angular/common/http';
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -15,7 +16,7 @@ export class AppComponent {
   public FileName : any = "Select File here";
   public IsUpload : boolean = false;
   private UserId : string = "ECB8BAF4-16E0-4C39-AB51-656CF4435BF8";
-  constructor(private apiService : ApiService) {
+  constructor(private apiService : ApiService, private http : HttpClient) {
     // this.apiService.get('Controller/action').subscribe(
     //   (response : any) => {
     //     console.log(response);
@@ -94,19 +95,61 @@ export class AppComponent {
   }
 
   public LoadImages() {
-    let PostObj = new BlobTokenRequestModel();
-    PostObj.TokenType = TokenTypes.List;
-    PostObj.FileName = null;
-    this.apiService.post('api/Token/Generate', PostObj).subscribe(
-      (response : any) => {
-        this.getAllFilesList(response.Token);
-      },
-      (error : any) => {
-        console.error(error);
-      }
-    )
+
+    // let PostObj = new BlobTokenRequestModel();
+    // PostObj.TokenType = TokenTypes.List;
+    // PostObj.FileName = null;
+    // this.apiService.post('api/Token/Generate', PostObj).subscribe(
+    //   (response : any) => {
+    //     this.getAllFilesList(response.Token);
+    //   },
+    //   (error : any) => {
+    //     console.error(error);
+    //   }
+    // )
   }
   private SaveRecord() {
     
   }
+  DownloadImage() {
+    const fileUrl = 'https://pendevfilestorage.blob.core.windows.net/pentechs/13631e3d-cc05-4896-9500-9fffe04d8042_file.name?sv=2025-01-05&se=2024-11-22T04%3A44%3A59Z&sr=c&sp=r&sig=3tUTZAIunTTD159Z3%2Ffvj4FSkvjKyD%2FtdJ7i7ugP9Pk%3D';
+
+    this.http.get(fileUrl, { responseType: 'blob' }).subscribe({
+      next: (blob) => {
+        const newFileName = 'news.png'; // Your desired file name
+
+        // Create an anchor element
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob); // Convert the blob to a downloadable URL
+        link.href = url;
+        link.download = newFileName; // Set the new file name
+        link.style.display = 'none'; // Optional: hide the element
+
+        // Append the link to the body, trigger the click, and remove the link
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // Clean up the URL object
+        URL.revokeObjectURL(url);
+      },
+      error: (err) => {
+        console.error('Error downloading file:', err);
+      },
+    });
+  }
+  // DownloadImage() {
+  //   const fileUrl = 'https://pendevfilestorage.blob.core.windows.net/pentechs/13631e3d-cc05-4896-9500-9fffe04d8042_file.name?sv=2025-01-05&se=2024-11-22T04%3A44%3A59Z&sr=c&sp=r&sig=3tUTZAIunTTD159Z3%2Ffvj4FSkvjKyD%2FtdJ7i7ugP9Pk%3D';
+
+  //   this.http.get(fileUrl, { responseType: 'blob' }).subscribe({
+  //     next: (blob) => {
+  //       // Rename and save the file
+  //       const renamedFileName = 'RenamedFileName.png'; // Set your desired file name
+  //       saveAs(blob, renamedFileName);
+  //     },
+  //     error: (err) => {
+  //       console.error('File download failed:', err);
+  //     },
+  //   });
+  // }
 }

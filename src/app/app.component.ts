@@ -5,6 +5,7 @@ import { BlobTokenRequestModel, TokenTypes } from './models/BlobTokenRequestMode
 import { BlobFileUploadModel } from './models/BlobFileUploadModel.model';
 import {saveAs}  from 'file-saver';
 import { HttpClient } from '@angular/common/http';
+import { FileBaseModel } from './models/FileBaseModel.model';
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -36,51 +37,65 @@ export class AppComponent {
     const files = event.target.files[0];
     console.log(files);
     const UploadFileName = `${this.generateGUID()}.${files.name.toString().split('.')[1]}`;
+    let FileObj = new FileBaseModel();
+    FileObj.FileName = files.name;
+    FileObj.FileFormat = files.name.toString().split('.')[1];
+    FileObj.FileSize = files.size;
+    FileObj.UploadedFileName = UploadFileName;
+    FileObj.FileType = files.type;
+    console.log(FileObj);
     let PostObj = new BlobTokenRequestModel();
     PostObj.TokenType = TokenTypes.UploadOrCreate;
     PostObj.FileName = null;
-    this.apiService.post('api/Token/Generate', PostObj).subscribe(
+    this.apiService.post('api/ats/Generate', PostObj).subscribe(
       (response : any) => {
-          this.uploadFile(files, UploadFileName, response.Token, () => {
-            console.log("Files are UPloaded");
-
+          this.uploadFile(files, UploadFileName, response.Token, response.FilePath, () => {
+            FileObj.FilePath = response.FilePath;
+            this.UploadFileRecord(FileObj);
           });
       },
       (error : any) => {
         console.error(error);
       }
     )
-    // this.uploadFile(files, UploadFileName, () => {
-    //   console.log("Files are UPloaded")
-    // })
-    // uploadFile(files)
   }
-
-  public DeleteImage (name : string, handler: () => void){
-    this.ContainerClass(this.TokenStr).deleteBlob(name).then(() => {
+  public UploadFileRecord(data : any) {
+    this.apiService.post('api/afs/Upload', data).subscribe(
+      (response : any) => {
+        console.log(response);
+      },
+      (error : any) => {
+        console.log(error);
+      }
+    )
+  }
+  public DeleteImage (name : string, FilePath : string, handler: () => void){
+    this.ContainerClass(this.TokenStr, FilePath).deleteBlob(name).then(() => {
       handler();
     })
   }
 
-  public uploadFile(File : Blob, name : string, Token: string,  handler:() => void) {
-    const blob_address = this.ContainerClass(Token).getBlockBlobClient(name);
+  public uploadFile(File : Blob, name : string, Token: string, FilePath : string,  handler:() => void) {
+    const blob_address = this.ContainerClass(Token, FilePath).getBlockBlobClient(`${FilePath}/${name}`);
     blob_address.uploadData(File, {blobHTTPHeaders:{blobContentType:File.type}}).then((response) => {
       console.log(response);
       handler();
     })
   }
 
-  public async getAllFilesList(TokenStr : string) {
-    const FilesList = this.ContainerClass(TokenStr).listBlobsFlat();
+  public async getAllFilesList(TokenStr : string, FilePath : string) {
+    console.log(FilePath);
+    const FilesList = this.ContainerClass(TokenStr, FilePath).listBlobsFlat({ prefix: FilePath });
     for await (const file of FilesList) {
-      console.log(`https://${this.accountName}.blob.core.windows.net/${this.containerName}/${file.name}${TokenStr}`);
       this.docLinks.push(`https://${this.accountName}.blob.core.windows.net/${this.containerName}/${file.name}${TokenStr}`);
     }
+
+    console.log(this.docLinks);
   }
 
-  private ContainerClass(TokenString : string) : ContainerClient {
+  private ContainerClass(TokenString : string, FilePath : string) : ContainerClient {
     console.log(`https://${this.accountName}.blob.core.windows.net?${TokenString}`);
-    return new BlobServiceClient(`https://${this.accountName}.blob.core.windows.net${TokenString}`).getContainerClient(this.containerName);
+    return new BlobServiceClient(`https://${this.accountName}.blob.core.windows.net?${TokenString}`).getContainerClient(this.containerName);
   }
 
   PopUpFileUpload() {
@@ -96,59 +111,59 @@ export class AppComponent {
 
   public LoadImages() {
 
-    // let PostObj = new BlobTokenRequestModel();
-    // PostObj.TokenType = TokenTypes.List;
-    // PostObj.FileName = null;
-    // this.apiService.post('api/Token/Generate', PostObj).subscribe(
-    //   (response : any) => {
-    //     this.getAllFilesList(response.Token);
-    //   },
-    //   (error : any) => {
-    //     console.error(error);
-    //   }
-    // )
+    let PostObj = new BlobTokenRequestModel();
+    PostObj.TokenType = TokenTypes.List;
+    PostObj.FileName = null;
+    this.apiService.post('api/ats/Generate', PostObj).subscribe(
+      (response : any) => {
+        this.getAllFilesList(response.Token, response.FilePath);
+      },
+      (error : any) => {
+        console.error(error);
+      }
+    )
   }
   private SaveRecord() {
     
   }
   DownloadImage() {
-    const fileUrl = 'https://pendevfilestorage.blob.core.windows.net/pentechs/13631e3d-cc05-4896-9500-9fffe04d8042_file.name?sv=2025-01-05&se=2024-11-22T04%3A44%3A59Z&sr=c&sp=r&sig=3tUTZAIunTTD159Z3%2Ffvj4FSkvjKyD%2FtdJ7i7ugP9Pk%3D';
-
-    this.http.get(fileUrl, { responseType: 'blob' }).subscribe({
-      next: (blob) => {
-        const newFileName = 'news.png'; // Your desired file name
-
-        // Create an anchor element
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob); // Convert the blob to a downloadable URL
-        link.href = url;
-        link.download = newFileName; // Set the new file name
-        link.style.display = 'none'; // Optional: hide the element
-
-        // Append the link to the body, trigger the click, and remove the link
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        // Clean up the URL object
-        URL.revokeObjectURL(url);
+    const fileId = '2b447128-ba8b-4f0c-b1e6-75bab775b32c  ';
+    // api/blob
+    this.apiService.get("api/blob/download?id=" + fileId).subscribe(
+      (response : any) => {
+        this.http.get(response.DownloadPath, { responseType: 'blob' }).subscribe({
+          next: (blob) => {
+            const fileNewName = response.FileName;
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.href = url;
+            link.download = fileNewName;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+          },
+          error: (err) => {
+            console.error('Error:', err);
+          },
+        });
       },
-      error: (err) => {
-        console.error('Error downloading file:', err);
-      },
-    });
+      (error : any) => {
+        console.log(error);
+      }
+    )
   }
   // DownloadImage() {
-  //   const fileUrl = 'https://pendevfilestorage.blob.core.windows.net/pentechs/13631e3d-cc05-4896-9500-9fffe04d8042_file.name?sv=2025-01-05&se=2024-11-22T04%3A44%3A59Z&sr=c&sp=r&sig=3tUTZAIunTTD159Z3%2Ffvj4FSkvjKyD%2FtdJ7i7ugP9Pk%3D';
+  //   const ImageLink = '';
 
-  //   this.http.get(fileUrl, { responseType: 'blob' }).subscribe({
+  //   this.http.get(ImageLink, { responseType: 'blob' }).subscribe({
   //     next: (blob) => {
-  //       // Rename and save the file
-  //       const renamedFileName = 'RenamedFileName.png'; // Set your desired file name
-  //       saveAs(blob, renamedFileName);
+  //       const fileNewName = 'RenamedFileName.png';
+  //       saveAs(blob, fileNewName);
   //     },
   //     error: (err) => {
-  //       console.error('File download failed:', err);
+  //       console.error('Fail reason:', err);
   //     },
   //   });
   // }

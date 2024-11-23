@@ -25,13 +25,14 @@
   <mat-tab>
     <ng-template mat-tab-label>
       <!-- <mat-icon class="example-tab-icon" (click)="LoadImages()">folder_open</mat-icon> -->
-      <mat-icon class="example-tab-icon" (click)="DownloadImage()">folder_open</mat-icon>
+      <mat-icon class="example-tab-icon" (click)="LoadImages()">folder_open</mat-icon>
       &nbsp;&nbsp; View Uploads
     </ng-template>
     <mat-grid-list cols="4" rowHeight="4:4">
-      <mat-grid-tile *ngFor="let file in docLinks">
+      <!-- <mat-grid-tile *ngFor="let file in docLinks">
         <img src="{{file}}" alt="">
-      </mat-grid-tile>
+      </mat-grid-tile> -->
+      <button class="btn" (click)="DownloadImage()">Download image</button>
     </mat-grid-list>
   </mat-tab>
 </mat-tab-group>
